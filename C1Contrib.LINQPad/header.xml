@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<DataContextDriver>
+   <MainAssembly>C1Contrib.LINQPad.dll</MainAssembly>
+   <SupportUri>https://github.com/burningice2866/CompositeC1Contrib.LINQPad</SupportUri>
+</DataContextDriver>
