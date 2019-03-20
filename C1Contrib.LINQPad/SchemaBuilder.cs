@@ -123,7 +123,7 @@ namespace C1Contrib.LINQPad
             {
                 var location = Assembly.GetExecutingAssembly().Location;
 
-                var assemblies = new List<string>()
+                var assemblies = new List<string>
                 {
                     "System.dll",
                     "System.Core.dll",
