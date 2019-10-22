@@ -9,12 +9,13 @@ namespace C1Contrib.LINQPad
     /// </summary>
     public partial class ConnectionDialog : Window
     {
-        ConnectionProperties _properties;
+        readonly ConnectionProperties _properties;
 
         public ConnectionDialog(IConnectionInfo cxInfo)
         {
             DataContext = _properties = new ConnectionProperties(cxInfo);
             Background = SystemColors.ControlBrush;
+
             InitializeComponent();
         }
 
@@ -25,6 +26,8 @@ namespace C1Contrib.LINQPad
 
         private void btnOK_Click(object sender, RoutedEventArgs e)
         {
+            _properties.Password = PasswordBox.Password;
+
             DialogResult = true;
         }
     }

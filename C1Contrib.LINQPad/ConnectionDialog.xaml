@@ -24,7 +24,7 @@
                     <Label Grid.Column="0" Grid.Row="0" Padding="3,1" VerticalAlignment="Center">User Name</Label>
                     <Label Grid.Column="0" Grid.Row="1" Padding="3,1" VerticalAlignment="Center">Password</Label>
                     <TextBox Text="{Binding UserName}" Grid.Column="1" Grid.Row="0" Width="140"/>
-                    <TextBox Text="{Binding Password}" Grid.Column="1" Grid.Row="1" Width="140"/>
+                    <PasswordBox Name="PasswordBox"  Grid.Column="1" Grid.Row="1" Width="140"/>
                 </Grid>
             </StackPanel>
         </GroupBox>
