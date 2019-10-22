@@ -16,7 +16,7 @@ namespace C1Contrib.LINQPad
             return new ConnectionProperties(cxInfo).Uri;
         }
 
-        public override bool ShowConnectionDialog(IConnectionInfo cxInfo, bool isNewConnection)
+        public override bool ShowConnectionDialog(IConnectionInfo cxInfo, ConnectionDialogOptions dialogOptions)
         {
             var result = new ConnectionDialog(cxInfo).ShowDialog();
 

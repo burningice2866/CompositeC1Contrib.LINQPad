@@ -1,13 +1,10 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
 using LINQPad.Extensibility.DataContext;
-
-using Microsoft.CSharp;
 
 namespace C1Contrib.LINQPad
 {
@@ -24,42 +21,43 @@ namespace C1Contrib.LINQPad
             DataRetriever = new C1DataRetriever(uri, userName, password);
         }
 
-        public List<ExplorerItem> GetSchemaAndBuildAssembly(string name, ref string ns, ref string typeName)
+        public List<ExplorerItem> GetSchemaAndBuildAssembly(string outputFile, ref string ns, ref string typeName)
         {
             typeName = TypeName;
 
             var entities = DataRetriever.ListTypes();
-            var code = GenerateCode(ns, entities);
+            var cSharpSourceCode = GenerateCode(ns, entities);
 
-            BuildAssembly(code, name);
+            BuildAssembly(cSharpSourceCode, outputFile);
 
             return GetSchema(entities);
         }
 
         public string GenerateCode(string ns, List<EntitySchema> entities)
         {
-            var writer = new StringWriter();
-
-            writer.WriteLine("using System;");
-            writer.WriteLine("using System.Collections.Generic;");
-            writer.WriteLine();
-            writer.WriteLine("using C1Contrib.LINQPad;");
-            writer.WriteLine();
-            writer.WriteLine("namespace " + ns);
-            writer.WriteLine("{");
-
-            foreach (var entity in entities)
+            using (var writer = new StringWriter())
             {
-                WriteEntityClass(writer, entity);
+                writer.WriteLine("using System;");
+                writer.WriteLine("using System.Collections.Generic;");
+                writer.WriteLine();
+                writer.WriteLine("using C1Contrib.LINQPad;");
+                writer.WriteLine();
+                writer.WriteLine("namespace " + ns);
+                writer.WriteLine("{");
+
+                foreach (var entity in entities)
+                {
+                    WriteEntityClass(writer, entity);
+                }
+
+                writer.WriteLine();
+
+                WriteContextClass(entities, writer);
+
+                writer.WriteLine("}");
+
+                return writer.ToString();
             }
-
-            writer.WriteLine();
-
-            WriteContextClass(entities, writer);
-
-            writer.WriteLine("}");
-
-            return writer.ToString();
         }
 
         private static void WriteEntityClass(TextWriter writer, EntitySchema entity)
@@ -107,37 +105,36 @@ namespace C1Contrib.LINQPad
             writer.WriteLine("}");
         }
 
-        public void BuildAssembly(string code, string name)
+        public void BuildAssembly(string cSharpSourceCode, string outputFile)
         {
-            CompilerResults results;
+            IList<string> assembliesToReference =
 
-            var providerOptions = new Dictionary<string, string>
+#if NETCORE
+            // GetCoreFxReferenceAssemblies is helper method that returns the full set of .NET Core reference assemblies.
+            // (There are more than 100 of them.)
+            DataContextDriver.GetCoreFxReferenceAssemblies().ToList();
+#else
+            // .NET Framework - here's how to get the basic Framework assemblies:
+            new List<string>()
             {
-                {
-                    "CompilerVersion",
-                    "v4.0"
-                }
-            };
+                typeof (int).Assembly.Location,            // mscorlib
+                typeof (Uri).Assembly.Location,            // System
+                typeof (Enumerable).Assembly.Location,     // System.Core
+            };                
+#endif
 
-            using (var codeProvider = new CSharpCodeProvider(providerOptions))
+            assembliesToReference.Add(Assembly.GetExecutingAssembly().Location);
+
+            var compileResult = DataContextDriver.CompileSource(new CompilationInput
             {
-                var location = Assembly.GetExecutingAssembly().Location;
+                FilePathsToReference = assembliesToReference.ToArray(),
+                OutputPath = outputFile,
+                SourceCode = new[] { cSharpSourceCode }
+            });
 
-                var assemblies = new List<string>
-                {
-                    "System.dll",
-                    "System.Core.dll",
-                    Path.Combine(location.Substring(0, location.LastIndexOf('\\')), "C1Contrib.LINQPad.dll")
-                };
-
-                var options = new CompilerParameters(assemblies.ToArray(), name, true);
-
-                results = codeProvider.CompileAssemblyFromSource(options, code);
-            }
-
-            if (results.Errors.Count > 0)
+            if (compileResult.Errors.Any())
             {
-                throw new Exception("Cannot compile typed context: " + results.Errors[0].ErrorText + " (line " + results.Errors[0].Line + ")");
+                throw new Exception("Cannot compile typed context: " + compileResult.Errors[0]);
             }
         }
 
